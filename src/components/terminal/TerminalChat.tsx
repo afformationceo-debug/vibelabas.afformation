@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, KeyboardEvent, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface TerminalLine {
@@ -13,6 +13,24 @@ interface TerminalLine {
 interface TerminalChatProps {
   onNavigate?: (sectionId: string) => void;
 }
+
+// 슬래시 명령어 목록 (자동완성용)
+const SLASH_COMMANDS = [
+  { cmd: '/journey', desc: '전체 여정 보기', icon: '📖' },
+  { cmd: '/story', desc: '시작 이야기 요약', icon: '📖' },
+  { cmd: '/timeline', desc: '연도별 타임라인', icon: '📅' },
+  { cmd: '/products', desc: '제품 생태계', icon: '🚀' },
+  { cmd: '/scout', desc: 'Scout Manager 상세', icon: '🎯' },
+  { cmd: '/infleos', desc: 'Infleos 상세', icon: '📊' },
+  { cmd: '/getcare', desc: 'GetCareKorea 상세', icon: '🏥' },
+  { cmd: '/csflow', desc: 'CS Flow AI 상세', icon: '💬' },
+  { cmd: '/vibeops', desc: 'VibeOps 상세', icon: '⚡' },
+  { cmd: '/flow', desc: '데이터 흐름도', icon: '🔄' },
+  { cmd: '/metrics', desc: '핵심 지표', icon: '📊' },
+  { cmd: '/proof', desc: '실적과 숫자', icon: '📈' },
+  { cmd: '/apply', desc: 'Hashed Vibe Labs 지원', icon: '🎯' },
+  { cmd: '/about', desc: '회사 소개', icon: 'ℹ️' },
+];
 
 // ASCII Art
 const ASCII_LOGO = `
@@ -562,8 +580,18 @@ export default function TerminalChat({ onNavigate }: TerminalChatProps) {
   const [input, setInput] = useState('');
   const [isBooting, setIsBooting] = useState(true);
   const [lastCommand, setLastCommand] = useState<string | null>(null);
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const autocompleteRef = useRef<HTMLDivElement>(null);
+
+  // 필터링된 명령어 목록
+  const filteredCommands = useMemo(() => {
+    if (!input.startsWith('/')) return [];
+    const query = input.toLowerCase();
+    return SLASH_COMMANDS.filter(c => c.cmd.toLowerCase().startsWith(query));
+  }, [input]);
 
   // 부팅 시퀀스
   useEffect(() => {
@@ -577,8 +605,9 @@ export default function TerminalChat({ onNavigate }: TerminalChatProps) {
         { id: '6', type: 'output', content: '  마케팅을 알고 코드를 짜는 조직, 어포메이션입니다.', color: '#888' },
         { id: '7', type: 'output', content: '  Hashed Vibe Labs 2026에 지원합니다.', color: '#888' },
         { id: '8', type: 'system', content: '', color: '#666' },
-        { id: '9', type: 'output', content: '  "help"를 입력하면 사용 가능한 명령어를 볼 수 있습니다.', color: '#00d4ff' },
-        { id: '10', type: 'system', content: '', color: '#666' },
+        { id: '9', type: 'output', content: '  "/" 를 입력하면 슬래시 명령어가 자동완성됩니다.', color: '#00d4ff' },
+        { id: '10', type: 'output', content: '  "help"를 입력하면 전체 명령어 목록을 볼 수 있습니다.', color: '#666' },
+        { id: '11', type: 'system', content: '', color: '#666' },
       ];
 
       for (let i = 0; i < bootLines.length; i++) {
@@ -604,6 +633,24 @@ export default function TerminalChat({ onNavigate }: TerminalChatProps) {
       inputRef.current?.focus();
     }
   }, [isBooting]);
+
+  // 자동완성 표시/숨김 처리
+  useEffect(() => {
+    if (input.startsWith('/') && filteredCommands.length > 0) {
+      setShowAutocomplete(true);
+      setSelectedIndex(0);
+    } else {
+      setShowAutocomplete(false);
+    }
+  }, [input, filteredCommands.length]);
+
+  // 자동완성 명령어 선택
+  const selectCommand = (cmd: string) => {
+    handleCommand(cmd);
+    setInput('');
+    setShowAutocomplete(false);
+    inputRef.current?.focus();
+  };
 
   const handleCommand = (cmd: string) => {
     const trimmed = cmd.trim().toLowerCase();
@@ -650,6 +697,29 @@ export default function TerminalChat({ onNavigate }: TerminalChatProps) {
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    // 자동완성이 열려있을 때 키보드 네비게이션
+    if (showAutocomplete && filteredCommands.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex(prev => (prev + 1) % filteredCommands.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex(prev => (prev - 1 + filteredCommands.length) % filteredCommands.length);
+        return;
+      }
+      if (e.key === 'Tab' || e.key === 'Enter') {
+        e.preventDefault();
+        selectCommand(filteredCommands[selectedIndex].cmd);
+        return;
+      }
+      if (e.key === 'Escape') {
+        setShowAutocomplete(false);
+        return;
+      }
+    }
+
     if (e.key === 'Enter') {
       handleCommand(input);
       setInput('');
@@ -695,24 +765,69 @@ export default function TerminalChat({ onNavigate }: TerminalChatProps) {
 
       {/* 입력 영역 */}
       {!isBooting && (
-        <div className="flex items-center px-4 py-3 border-t border-[#222] bg-[#0a0a0a]">
-          <span className="text-[#00ff88] mr-2">$</span>
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="flex-1 bg-transparent text-white outline-none caret-[#00ff88]"
-            placeholder="명령어를 입력하세요..."
-            autoComplete="off"
-            spellCheck={false}
-          />
-          <motion.div
-            animate={{ opacity: [1, 0] }}
-            transition={{ duration: 0.5, repeat: Infinity }}
-            className="w-2 h-5 bg-[#00ff88] ml-1"
-          />
+        <div className="relative">
+          {/* 자동완성 드롭다운 */}
+          <AnimatePresence>
+            {showAutocomplete && filteredCommands.length > 0 && (
+              <motion.div
+                ref={autocompleteRef}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.15 }}
+                className="absolute bottom-full left-0 right-0 mb-1 mx-4 bg-[#1a1a1a] border border-[#333] rounded-lg overflow-hidden shadow-2xl z-50"
+              >
+                <div className="px-3 py-2 border-b border-[#333] bg-[#111]">
+                  <span className="text-[#666] text-xs">슬래시 명령어 · ↑↓ 이동 · Enter 선택 · Esc 닫기</span>
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  {filteredCommands.map((cmd, index) => (
+                    <motion.div
+                      key={cmd.cmd}
+                      onClick={() => selectCommand(cmd.cmd)}
+                      className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${
+                        index === selectedIndex
+                          ? 'bg-[#00ff88]/10 border-l-2 border-[#00ff88]'
+                          : 'hover:bg-[#222] border-l-2 border-transparent'
+                      }`}
+                      whileHover={{ x: 2 }}
+                    >
+                      <span className="text-lg">{cmd.icon}</span>
+                      <div className="flex-1">
+                        <span className={`font-mono ${index === selectedIndex ? 'text-[#00ff88]' : 'text-white'}`}>
+                          {cmd.cmd}
+                        </span>
+                        <span className="text-[#666] text-sm ml-3">{cmd.desc}</span>
+                      </div>
+                      {index === selectedIndex && (
+                        <span className="text-[#00ff88] text-xs">Enter ↵</span>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="flex items-center px-4 py-3 border-t border-[#222] bg-[#0a0a0a]">
+            <span className="text-[#00ff88] mr-2">$</span>
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="flex-1 bg-transparent text-white outline-none caret-[#00ff88]"
+              placeholder='명령어를 입력하세요... ( "/" 로 시작)'
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <motion.div
+              animate={{ opacity: [1, 0] }}
+              transition={{ duration: 0.5, repeat: Infinity }}
+              className="w-2 h-5 bg-[#00ff88] ml-1"
+            />
+          </div>
         </div>
       )}
     </div>
