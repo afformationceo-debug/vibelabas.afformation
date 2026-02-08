@@ -3,6 +3,18 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 
+// 모바일 감지 훅
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return isMobile;
+}
+
 // ============================================
 // TEAM DATA
 // ============================================
@@ -16,6 +28,7 @@ interface TeamMember {
   color: string;
   icon: string;
   position: { x: number; y: number };
+  mobilePosition: { x: number; y: number };
   capabilities: string[];
   details: {
     title: string;
@@ -34,6 +47,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     color: '#00ff88',
     icon: '👤',
     position: { x: 25, y: 35 },
+    mobilePosition: { x: 28, y: 25 },
     capabilities: ['조직 관리', 'HR', '대외 영업', '경영 전략', '바이브코딩'],
     details: [
       {
@@ -66,6 +80,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     color: '#00d4ff',
     icon: '👤',
     position: { x: 75, y: 35 },
+    mobilePosition: { x: 72, y: 25 },
     capabilities: ['유효타 마케팅', '영업 전략', 'DB 구축', '바이브코딩', 'LLM 이해'],
     details: [
       {
@@ -98,6 +113,7 @@ const TEAM_MEMBERS: TeamMember[] = [
     color: '#c084fc',
     icon: '👤',
     position: { x: 50, y: 75 },
+    mobilePosition: { x: 50, y: 62 },
     capabilities: ['회계', 'SaaS 영업', '바이브코딩', '실무 오퍼레이션'],
     details: [
       {
@@ -134,7 +150,7 @@ const CONNECTIONS = [
 // CONNECTION LINES (SVG)
 // ============================================
 
-function GraphConnections({ activeId }: { activeId: string | null }) {
+function GraphConnections({ activeId, isMobile }: { activeId: string | null; isMobile: boolean }) {
   // viewBox 기반 좌표계 (0-1000)
   const scale = 10; // position 값(0-100)을 viewBox(0-1000)으로 변환
 
@@ -166,10 +182,12 @@ function GraphConnections({ activeId }: { activeId: string | null }) {
         const toMember = TEAM_MEMBERS.find((m) => m.id === conn.to)!;
         const isActive = activeId === conn.from || activeId === conn.to;
 
-        const fx = fromMember.position.x * scale;
-        const fy = fromMember.position.y * scale;
-        const tx = toMember.position.x * scale;
-        const ty = toMember.position.y * scale;
+        const fromPos = isMobile ? fromMember.mobilePosition : fromMember.position;
+        const toPos = isMobile ? toMember.mobilePosition : toMember.position;
+        const fx = fromPos.x * scale;
+        const fy = fromPos.y * scale;
+        const tx = toPos.x * scale;
+        const ty = toPos.y * scale;
 
         // 곡선 중점
         const mx = (fx + tx) / 2;
@@ -255,11 +273,14 @@ function TeamNode({
   member,
   isActive,
   onClick,
+  isMobile,
 }: {
   member: TeamMember;
   isActive: boolean;
   onClick: () => void;
+  isMobile: boolean;
 }) {
+  const pos = isMobile ? member.mobilePosition : member.position;
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0 }}
@@ -267,8 +288,8 @@ function TeamNode({
       transition={{ duration: 0.6, delay: TEAM_MEMBERS.indexOf(member) * 0.2 }}
       className="absolute cursor-pointer group"
       style={{
-        left: `${member.position.x}%`,
-        top: `${member.position.y}%`,
+        left: `${pos.x}%`,
+        top: `${pos.y}%`,
         transform: 'translate(-50%, -50%)',
         zIndex: isActive ? 20 : 10,
       }}
@@ -295,7 +316,7 @@ function TeamNode({
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.95 }}
         animate={isActive ? { scale: 1.05 } : {}}
-        className="relative w-28 h-28 md:w-36 md:h-36 rounded-2xl flex flex-col items-center justify-center bg-[#0a0a0a] transition-all duration-300"
+        className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-36 md:h-36 rounded-2xl flex flex-col items-center justify-center bg-[#0a0a0a] transition-all duration-300"
         style={{
           border: `2px solid ${isActive ? member.color : '#333'}`,
           boxShadow: isActive ? `0 0 30px ${member.color}40` : 'none',
@@ -303,15 +324,15 @@ function TeamNode({
       >
         {/* 역할 배지 */}
         <div
-          className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-mono whitespace-nowrap"
+          className="absolute -top-3 left-1/2 -translate-x-1/2 px-2 sm:px-3 py-0.5 rounded-full text-[8px] sm:text-[10px] font-mono whitespace-nowrap"
           style={{ backgroundColor: member.color, color: '#000' }}
         >
-          {member.role}
+          {isMobile ? member.role.split(' (')[0] : member.role}
         </div>
 
         {/* 아이콘 */}
         <div
-          className="w-12 h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center text-2xl mb-1"
+          className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-full flex items-center justify-center text-xl sm:text-2xl mb-1"
           style={{ backgroundColor: `${member.color}20`, border: `1px solid ${member.color}40` }}
         >
           {member.icon}
@@ -469,6 +490,7 @@ export default function TeamGraph() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-100px' });
+  const isMobile = useIsMobile();
 
   const activeMember = activeId ? TEAM_MEMBERS.find((m) => m.id === activeId) || null : null;
 
@@ -476,7 +498,7 @@ export default function TeamGraph() {
     <section
       ref={ref}
       id="team"
-      className="relative py-32 bg-gradient-to-b from-black via-[#030308] to-black overflow-hidden"
+      className="relative py-16 sm:py-24 md:py-32 bg-gradient-to-b from-black via-[#030308] to-black overflow-hidden"
     >
       {/* 배경 패턴 */}
       <div
@@ -495,13 +517,13 @@ export default function TeamGraph() {
           className="text-center mb-4"
         >
           <span className="text-[#c084fc] font-mono text-sm tracking-[0.3em]">THE TEAM</span>
-          <h2 className="text-4xl md:text-6xl font-black text-white mt-4">
+          <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-white mt-4">
             3인의{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00ff88] via-[#00d4ff] to-[#c084fc]">
               LangGraph
             </span>
           </h2>
-          <p className="text-xl text-gray-400 mt-4">
+          <p className="text-base sm:text-xl text-gray-400 mt-4">
             각 노드가 독립적으로 실행하고, 네트워크로 상호작용합니다
           </p>
           <motion.div
@@ -532,7 +554,7 @@ export default function TeamGraph() {
         </motion.div>
 
         {/* 그래프 영역 */}
-        <div className="relative w-full h-[500px] md:h-[600px]">
+        <div className="relative w-full h-[400px] sm:h-[500px] md:h-[600px]">
           {/* 배경 그리드 */}
           <div
             className="absolute inset-0 opacity-15 rounded-2xl"
@@ -546,7 +568,7 @@ export default function TeamGraph() {
           />
 
           {/* 연결선 */}
-          {isInView && <GraphConnections activeId={activeId} />}
+          {isInView && <GraphConnections activeId={activeId} isMobile={isMobile} />}
 
           {/* 노드들 */}
           {isInView &&
@@ -556,6 +578,7 @@ export default function TeamGraph() {
                 member={member}
                 isActive={activeId === member.id}
                 onClick={() => setActiveId(activeId === member.id ? null : member.id)}
+                isMobile={isMobile}
               />
             ))}
 
@@ -579,7 +602,7 @@ export default function TeamGraph() {
           )}
 
           {/* 범례 */}
-          <div className="absolute bottom-4 left-4 flex items-center gap-4 text-[10px] text-gray-600 font-mono">
+          <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 flex items-center gap-2 sm:gap-4 text-[9px] sm:text-[10px] text-gray-600 font-mono">
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 rounded-full bg-[#00ff88]" />
               <span>Strategy</span>
@@ -600,7 +623,7 @@ export default function TeamGraph() {
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.8 }}
-          className="mt-12 bg-gradient-to-r from-[#00ff88]/10 via-[#00d4ff]/10 to-[#c084fc]/10 border border-[#c084fc]/20 rounded-2xl p-8 text-center"
+          className="mt-8 sm:mt-12 bg-gradient-to-r from-[#00ff88]/10 via-[#00d4ff]/10 to-[#c084fc]/10 border border-[#c084fc]/20 rounded-2xl p-4 sm:p-8 text-center"
         >
           <p className="text-lg text-white font-medium mb-2">
             &ldquo;우리는 3명이지만, AI와 함께 30명의 일을 합니다&rdquo;

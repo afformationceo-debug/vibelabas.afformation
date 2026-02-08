@@ -33,14 +33,22 @@ const SLASH_COMMANDS = [
   { cmd: '/about', desc: '회사 소개', icon: 'ℹ️' },
 ];
 
-// ASCII Art
-const ASCII_LOGO = `
+// ASCII Art - 데스크톱용
+const ASCII_LOGO_DESKTOP = `
    █████╗ ███████╗███████╗ ██████╗ ██████╗ ███╗   ███╗ █████╗ ████████╗██╗ ██████╗ ███╗   ██╗
   ██╔══██╗██╔════╝██╔════╝██╔═══██╗██╔══██╗████╗ ████║██╔══██╗╚══██╔══╝██║██╔═══██╗████╗  ██║
   ███████║█████╗  █████╗  ██║   ██║██████╔╝██╔████╔██║███████║   ██║   ██║██║   ██║██╔██╗ ██║
   ██╔══██║██╔══╝  ██╔══╝  ██║   ██║██╔══██╗██║╚██╔╝██║██╔══██║   ██║   ██║██║   ██║██║╚██╗██║
   ██║  ██║██║     ██║     ╚██████╔╝██║  ██║██║ ╚═╝ ██║██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
   ╚═╝  ╚═╝╚═╝     ╚═╝      ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
+`;
+
+// ASCII Art - 모바일용 (축소)
+const ASCII_LOGO_MOBILE = `
+  ╔═══════════════════════╗
+  ║    A F F O R M A T I O N    ║
+  ║         C O D E         ║
+  ╚═══════════════════════╝
 `;
 
 // 명령어 정의
@@ -646,12 +654,18 @@ export default function TerminalChat({ onNavigate }: TerminalChatProps) {
 
   // 부팅 시퀀스
   useEffect(() => {
+    const isMobile = window.innerWidth < 640;
+    const asciiLogo = isMobile ? ASCII_LOGO_MOBILE : ASCII_LOGO_DESKTOP;
+    const divider = isMobile
+      ? '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+      : '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+
     const bootSequence = async () => {
       const bootLines: TerminalLine[] = [
         { id: '1', type: 'system', content: 'AFFORMATION CODE v1.0.0', color: '#00ff88' },
-        { id: '2', type: 'system', content: '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', color: '#333' },
-        { id: '3', type: 'ascii', content: ASCII_LOGO, color: '#00ff88' },
-        { id: '4', type: 'system', content: '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', color: '#333' },
+        { id: '2', type: 'system', content: divider, color: '#333' },
+        { id: '3', type: 'ascii', content: asciiLogo, color: '#00ff88' },
+        { id: '4', type: 'system', content: divider, color: '#333' },
         { id: '5', type: 'system', content: '', color: '#666' },
         { id: '6', type: 'output', content: '  마케팅을 알고 코드를 짜는 조직, 어포메이션입니다.', color: '#888' },
         { id: '7', type: 'output', content: '  Hashed Vibe Labs 2026에 지원합니다.', color: '#888' },

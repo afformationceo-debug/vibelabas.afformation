@@ -3,6 +3,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return isMobile;
+}
+
 // 제품 데이터 - 스토리 중심
 const JOURNEY_NODES = [
   {
@@ -21,6 +32,7 @@ const JOURNEY_NODES = [
     color: '#ff6b6b',
     icon: '😰',
     position: { x: 50, y: 10 },
+    mobilePosition: { x: 50, y: 5 },
   },
   {
     id: 'scout',
@@ -40,6 +52,7 @@ const JOURNEY_NODES = [
     color: '#00ff88',
     icon: '🎯',
     position: { x: 20, y: 30 },
+    mobilePosition: { x: 25, y: 22 },
     from: ['pain'],
   },
   {
@@ -60,6 +73,7 @@ const JOURNEY_NODES = [
     color: '#00d4ff',
     icon: '📊',
     position: { x: 50, y: 45 },
+    mobilePosition: { x: 50, y: 38 },
     from: ['scout'],
   },
   {
@@ -80,6 +94,7 @@ const JOURNEY_NODES = [
     color: '#f472b6',
     icon: '🏥',
     position: { x: 80, y: 30 },
+    mobilePosition: { x: 75, y: 22 },
     from: ['pain'],
   },
   {
@@ -100,6 +115,7 @@ const JOURNEY_NODES = [
     color: '#ffd93d',
     icon: '💬',
     position: { x: 35, y: 65 },
+    mobilePosition: { x: 30, y: 55 },
     from: ['infleos', 'getcare'],
   },
   {
@@ -120,12 +136,13 @@ const JOURNEY_NODES = [
     color: '#c084fc',
     icon: '⚡',
     position: { x: 65, y: 80 },
+    mobilePosition: { x: 70, y: 55 },
     from: ['scout', 'infleos', 'getcare', 'csflow'],
   },
 ];
 
 // SVG 연결선 컴포넌트
-function ConnectionLines({ activeNode }: { activeNode: string | null }) {
+function ConnectionLines({ activeNode, isMobile }: { activeNode: string | null; isMobile: boolean }) {
   const connections = [
     { from: 'pain', to: 'scout', color: '#ff6b6b' },
     { from: 'pain', to: 'getcare', color: '#ff6b6b' },
@@ -138,13 +155,21 @@ function ConnectionLines({ activeNode }: { activeNode: string | null }) {
     { from: 'csflow', to: 'vibeops', color: '#ffd93d' },
   ];
 
+  const scale = 10; // 0-100 -> 0-1000 viewBox
+
   const getNodePosition = (id: string) => {
     const node = JOURNEY_NODES.find(n => n.id === id);
-    return node ? node.position : { x: 50, y: 50 };
+    if (!node) return { x: 50, y: 50 };
+    return isMobile ? node.mobilePosition : node.position;
   };
 
   return (
-    <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
+    <svg
+      className="absolute inset-0 w-full h-full pointer-events-none"
+      style={{ zIndex: 0 }}
+      viewBox="0 0 1000 1000"
+      preserveAspectRatio="none"
+    >
       <defs>
         {connections.map((conn, i) => (
           <linearGradient key={`grad-${i}`} id={`gradient-${conn.from}-${conn.to}`} x1="0%" y1="0%" x2="100%" y2="100%">
@@ -166,16 +191,17 @@ function ConnectionLines({ activeNode }: { activeNode: string | null }) {
         const to = getNodePosition(conn.to);
         const isActive = activeNode === conn.from || activeNode === conn.to;
 
-        // 베지어 커브 계산
-        const midX = (from.x + to.x) / 2;
-        const midY = (from.y + to.y) / 2;
-        const controlX = midX + (Math.random() - 0.5) * 10;
-        const controlY = midY - 10;
+        const fx = from.x * scale;
+        const fy = from.y * scale;
+        const tx = to.x * scale;
+        const ty = to.y * scale;
+        const mx = (fx + tx) / 2;
+        const my = (fy + ty) / 2 - 80;
 
         return (
           <motion.path
             key={i}
-            d={`M ${from.x}% ${from.y}% Q ${controlX}% ${controlY}% ${to.x}% ${to.y}%`}
+            d={`M ${fx} ${fy} Q ${mx} ${my} ${tx} ${ty}`}
             fill="none"
             stroke={`url(#gradient-${conn.from}-${conn.to})`}
             strokeWidth={isActive ? 3 : 1.5}
@@ -199,17 +225,24 @@ function ConnectionLines({ activeNode }: { activeNode: string | null }) {
 
         if (!isActive) return null;
 
+        const fx = from.x * scale;
+        const fy = from.y * scale;
+        const tx = to.x * scale;
+        const ty = to.y * scale;
+        const mx = (fx + tx) / 2;
+        const my = (fy + ty) / 2 - 80;
+
         return (
           <motion.circle
             key={`flow-${i}`}
-            r="4"
+            r="5"
             fill={conn.color}
             filter="url(#glow)"
           >
             <animateMotion
               dur="2s"
               repeatCount="indefinite"
-              path={`M ${from.x * 8} ${from.y * 6} Q ${((from.x + to.x) / 2) * 8} ${((from.y + to.y) / 2 - 10) * 6} ${to.x * 8} ${to.y * 6}`}
+              path={`M ${fx} ${fy} Q ${mx} ${my} ${tx} ${ty}`}
             />
           </motion.circle>
         );
@@ -222,12 +255,15 @@ function ConnectionLines({ activeNode }: { activeNode: string | null }) {
 function JourneyNode({
   node,
   isActive,
-  onClick
+  onClick,
+  isMobile,
 }: {
   node: typeof JOURNEY_NODES[0];
   isActive: boolean;
   onClick: () => void;
+  isMobile: boolean;
 }) {
+  const pos = isMobile ? node.mobilePosition : node.position;
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0 }}
@@ -235,8 +271,8 @@ function JourneyNode({
       transition={{ duration: 0.5, delay: JOURNEY_NODES.indexOf(node) * 0.15 }}
       className="absolute cursor-pointer group"
       style={{
-        left: `${node.position.x}%`,
-        top: `${node.position.y}%`,
+        left: `${pos.x}%`,
+        top: `${pos.y}%`,
         transform: 'translate(-50%, -50%)',
         zIndex: isActive ? 20 : 10,
       }}
@@ -250,7 +286,7 @@ function JourneyNode({
           boxShadow: `0 0 40px ${node.color}60`,
           scale: 1.1,
         } : {}}
-        className={`relative w-20 h-20 md:w-24 md:h-24 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 ${
+        className={`relative w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-2xl flex flex-col items-center justify-center transition-all duration-300 ${
           node.type === 'hub' ? 'bg-gradient-to-br from-[#c084fc]/30 to-[#00ff88]/30' :
           node.type === 'origin' ? 'bg-[#ff6b6b]/20' : 'bg-[#111]'
         }`}
@@ -258,8 +294,8 @@ function JourneyNode({
           border: `2px solid ${isActive ? node.color : '#333'}`,
         }}
       >
-        <span className="text-2xl md:text-3xl">{node.icon}</span>
-        <span className="text-[10px] md:text-xs font-bold text-white mt-1 text-center px-1 leading-tight">
+        <span className="text-xl sm:text-2xl md:text-3xl">{node.icon}</span>
+        <span className="text-[8px] sm:text-[10px] md:text-xs font-bold text-white mt-1 text-center px-1 leading-tight">
           {node.title}
         </span>
 
@@ -300,10 +336,10 @@ function DetailPanel({ node, onClose }: { node: typeof JOURNEY_NODES[0] | null; 
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 50 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 50 }}
-      className="absolute right-4 top-4 bottom-4 w-80 bg-[#0a0a0a]/95 backdrop-blur-xl border border-[#222] rounded-2xl overflow-hidden z-30"
+      initial={{ opacity: 0, y: 50 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 50 }}
+      className="absolute left-2 right-2 bottom-2 md:left-auto md:right-4 md:top-4 md:bottom-4 md:w-80 max-h-[55%] md:max-h-none bg-[#0a0a0a]/95 backdrop-blur-xl border border-[#222] rounded-2xl overflow-hidden z-30"
     >
       {/* 헤더 */}
       <div className="p-4 border-b border-[#222]" style={{ backgroundColor: `${node.color}10` }}>
@@ -378,11 +414,12 @@ export default function ProductJourney() {
   const [activeNode, setActiveNode] = useState<string | null>(null);
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const isMobile = useIsMobile();
 
   const selectedNode = activeNode ? JOURNEY_NODES.find(n => n.id === activeNode) || null : null;
 
   return (
-    <div ref={ref} className="relative w-full h-[700px] md:h-[800px]">
+    <div ref={ref} className="relative w-full h-[550px] sm:h-[700px] md:h-[800px]">
       {/* 배경 그리드 */}
       <div className="absolute inset-0 opacity-20" style={{
         backgroundImage: `
@@ -393,7 +430,7 @@ export default function ProductJourney() {
       }} />
 
       {/* 연결선 */}
-      {isInView && <ConnectionLines activeNode={activeNode} />}
+      {isInView && <ConnectionLines activeNode={activeNode} isMobile={isMobile} />}
 
       {/* 노드들 */}
       {isInView && JOURNEY_NODES.map((node) => (
@@ -402,6 +439,7 @@ export default function ProductJourney() {
           node={node}
           isActive={activeNode === node.id}
           onClick={() => setActiveNode(activeNode === node.id ? null : node.id)}
+          isMobile={isMobile}
         />
       ))}
 
@@ -413,7 +451,7 @@ export default function ProductJourney() {
       </AnimatePresence>
 
       {/* 범례 */}
-      <div className="absolute bottom-4 left-4 flex items-center gap-6 text-xs text-gray-500">
+      <div className="absolute bottom-2 sm:bottom-4 left-2 sm:left-4 flex items-center gap-3 sm:gap-6 text-[10px] sm:text-xs text-gray-500">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded bg-[#ff6b6b]" />
           <span>Pain Point</span>
