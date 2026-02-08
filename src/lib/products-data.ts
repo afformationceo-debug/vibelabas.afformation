@@ -6,7 +6,7 @@ export const PRODUCTS: Product[] = [
     name: 'Scout Manager',
     koreanName: '스카우트 매니저',
     description: 'AI 인플루언서 마케팅 자동화 SaaS',
-    url: 'https://scoutmanager.io',
+    url: 'https://desk.scoutmanager.io/',
     category: 'core',
     features: [
       '자동 인플루언서 발굴',
@@ -26,7 +26,7 @@ export const PRODUCTS: Product[] = [
     name: 'Infleos',
     koreanName: '인플레오스',
     description: '풀퍼널 인플루언서 마케팅 플랫폼',
-    url: 'https://infleos.io',
+    url: 'https://infleos.io/',
     category: 'core',
     features: [
       '7단계 퍼널 자동화',
@@ -46,7 +46,7 @@ export const PRODUCTS: Product[] = [
     name: 'GetCareKorea',
     koreanName: '겟케어코리아',
     description: '의료관광 플랫폼',
-    url: 'https://getcarekorea.com',
+    url: 'https://getcarekorea.com/en',
     category: 'supporting',
     features: [
       '10,000+ 환자 연결',
@@ -66,7 +66,7 @@ export const PRODUCTS: Product[] = [
     name: 'CS Flow',
     koreanName: '씨에스플로우',
     description: 'CS 자동화 솔루션',
-    url: 'https://cs-landing.afformation.co.kr',
+    url: 'https://cs-admin.afformation.co.kr/',
     category: 'supporting',
     features: [
       '87.5% 자동 해결률',

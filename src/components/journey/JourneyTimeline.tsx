@@ -76,7 +76,7 @@ const JOURNEY_STORY = [
     ],
     product: {
       name: 'Scout Manager',
-      url: 'https://scoutmanager.io',
+      url: 'https://desk.scoutmanager.io/',
       icon: '🎯',
     },
     color: '#00ff88',
@@ -104,7 +104,7 @@ const JOURNEY_STORY = [
     ],
     product: {
       name: 'Infleos',
-      url: 'https://infleos.com',
+      url: 'https://infleos.io/',
       icon: '📊',
     },
     color: '#00d4ff',
@@ -132,7 +132,7 @@ const JOURNEY_STORY = [
     ],
     product: {
       name: 'GetCareKorea',
-      url: 'https://getcarekorea.com',
+      url: 'https://getcarekorea.com/en',
       icon: '🏥',
     },
     color: '#f472b6',
@@ -161,7 +161,7 @@ const JOURNEY_STORY = [
     ],
     product: {
       name: 'CS Flow',
-      url: 'https://csflow.ai',
+      url: 'https://cs-admin.afformation.co.kr/',
       icon: '💬',
     },
     color: '#ffd93d',
@@ -192,7 +192,7 @@ const JOURNEY_STORY = [
     ],
     product: {
       name: 'VibeOps',
-      url: 'https://vibeops.io',
+      url: '#',
       icon: '⚡',
     },
     color: '#c084fc',

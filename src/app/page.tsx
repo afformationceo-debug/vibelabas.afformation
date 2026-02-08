@@ -19,6 +19,15 @@ const TerminalChat = dynamic(() => import('@/components/terminal/TerminalChat'),
   ),
 });
 
+const TeamGraph = dynamic(() => import('@/components/sections/TeamGraph'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[600px] bg-[#0a0a0a] flex items-center justify-center">
+      <span className="text-[#c084fc] font-mono animate-pulse">Loading team graph...</span>
+    </div>
+  ),
+});
+
 const ProductJourney = dynamic(() => import('@/components/journey/ProductJourney'), {
   ssr: false,
   loading: () => (
@@ -283,10 +292,10 @@ function ProofSection() {
   const isInView = useInView(ref, { once: true, margin: "-100px" });
 
   const metrics = [
-    { value: 30, suffix: '+', label: '파트너사', color: '#00ff88', icon: '🏥' },
+    { value: 80, suffix: '+', label: '잠재 리드', color: '#00ff88', icon: '🎯' },
     { value: 100, suffix: '억+', label: '누적 매출', color: '#00d4ff', icon: '💰' },
-    { value: 3, suffix: '개국', label: '글로벌', color: '#ffd93d', icon: '🌏' },
-    { value: 6, suffix: '개', label: '라이브 제품', color: '#c084fc', icon: '🚀' },
+    { value: 5, suffix: '개', label: '라이브 서비스', color: '#ffd93d', icon: '🚀' },
+    { value: 3, suffix: '인', label: '풀타임 팀', color: '#c084fc', icon: '⚡' },
   ];
 
   return (
@@ -330,30 +339,35 @@ function ProofSection() {
         {/* 제품별 핵심 지표 */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
-            { name: 'Scout Manager', metric: '99.9% 시간 단축', sub: '3일 → 30초', color: '#00ff88' },
-            { name: 'Infleos', metric: '70% 업무 절감', sub: '풀퍼널 통합', color: '#00d4ff' },
-            { name: 'GetCareKorea', metric: '50+ 국가', sub: '글로벌 커버리지', color: '#f472b6' },
-            { name: 'CS Flow', metric: '90% 자동화', sub: '12개 언어', color: '#ffd93d' },
-            { name: 'VibeOps', metric: '100% 통합', sub: '실시간 인사이트', color: '#c084fc' },
-            { name: 'Afformation', metric: '10년', sub: '현장 노하우', color: '#ff6b6b' },
+            { name: 'Scout Manager', metric: '80+ 잠재리드 수집', sub: 'Cronjob 자동추출/시딩/인입관리', color: '#00ff88', url: 'https://desk.scoutmanager.io/' },
+            { name: 'Infleos', metric: '전사 사용 중', sub: '인플루언서 소통~2차관리 토탈', color: '#00d4ff', url: 'https://infleos.io/' },
+            { name: 'GetCareKorea', metric: '50+ 국가', sub: '외국인 환자 유치 플랫폼', color: '#f472b6', url: 'https://getcarekorea.com/en' },
+            { name: 'CS Flow', metric: '90% 자동화', sub: '다국어 CS 자동 응대', color: '#ffd93d', url: 'https://cs-admin.afformation.co.kr/' },
+            { name: 'VibeOps', metric: '준비 중', sub: '통합 운영 대시보드', color: '#c084fc', url: '#' },
+            { name: 'Afformation', metric: '10년', sub: '현장 노하우 · 고객사 니즈 100% 파악', color: '#ff6b6b', url: 'https://afformation.co.kr' },
           ].map((item, i) => (
-            <motion.div
+            <motion.a
               key={i}
+              href={item.url}
+              target={item.url !== '#' ? '_blank' : undefined}
+              rel="noopener noreferrer"
               initial={{ opacity: 0, x: -20 }}
               animate={isInView ? { opacity: 1, x: 0 } : {}}
               transition={{ delay: 0.3 + i * 0.1 }}
-              className="flex items-center gap-4 p-4 bg-[#111] border border-[#222] rounded-xl"
+              whileHover={{ scale: 1.02 }}
+              className="flex items-center gap-4 p-4 bg-[#111] border border-[#222] rounded-xl cursor-pointer hover:border-[#444] transition-colors"
             >
               <div className="w-12 h-12 rounded-lg flex items-center justify-center text-lg font-bold"
                    style={{ backgroundColor: `${item.color}20`, color: item.color }}>
                 {item.name.charAt(0)}
               </div>
-              <div>
+              <div className="flex-1">
                 <div className="font-bold text-white">{item.name}</div>
                 <div className="text-sm" style={{ color: item.color }}>{item.metric}</div>
                 <div className="text-xs text-gray-500">{item.sub}</div>
               </div>
-            </motion.div>
+              {item.url !== '#' && <span className="text-gray-600 text-sm">&rarr;</span>}
+            </motion.a>
           ))}
         </div>
       </div>
@@ -466,7 +480,10 @@ export default function Home() {
       {/* 5. 실적 증명 */}
       <ProofSection />
 
-      {/* 6. CTA */}
+      {/* 6. 팀 소개 */}
+      <TeamGraph />
+
+      {/* 7. CTA */}
       <CTASection />
 
       {/* Footer */}
